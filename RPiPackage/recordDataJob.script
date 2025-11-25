@@ -1,0 +1,62 @@
+#!/usr/bin/bash
+
+ndt7bin=ndt7
+speedtestbin=speedtest
+basedatafname1=ndt.data.file
+exCSVbin=extractCSV.out
+basedatafname2=ookla.data.file
+dataRecord=/home/rpadmin/Desktop/nwdata
+datafilecount=1
+testcount=20
+
+sleep 5m
+datadir=$(date +%Y%m%d%H%M%S)
+savepath=$dataRecord/$datadir
+mkdir -p $savepath
+
+runlogsfname=runlogs.temp
+touch $dataRecord/$runlogsfname
+echo -n >$dataRecord/$runlogsfname
+
+ndt7fname=ndt7op.json
+touch $dataRecord/$ndt7fname
+echo -n >$dataRecord/$ndt7fname
+
+# Accepting speedtest license (dummy run)
+$speedtestbin --accept-license && echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') Ookla speedtest dummy run to accept licence done." >>$dataRecord/$runlogsfname || echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') Error: Ookla speedtest dummy run to accept licence failed." >>$dataRecord/$runlogsfname
+
+cd $dataRecord
+for ((i=1; i<=$datafilecount; i++))
+do
+	datafname1=$savepath/$basedatafname1$i.csv
+	datafname2=$savepath/$basedatafname2$i.csv
+	echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') Recording data. Iteration $i." >>$dataRecord/$runlogsfname
+	touch $datafname1 $datafname2
+	echo -n >$datafname1
+	echo -n >$datafname2
+	for ((j=1; j<=$testcount; j++))
+	do
+		echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ...Running ndt7... Test $j." >>$dataRecord/$runlogsfname
+		$ndt7bin -format json >$dataRecord/$ndt7fname && echo -n "$(date '+[%d-%m-%Y %H:%M:%S IST]') ......Test done. " >>$dataRecord/$runlogsfname || echo -n "$(date '+[%d-%m-%Y %H:%M:%S IST]') ......Failed to run $ndt7bin. " >>$dataRecord/$runlogsfname
+		$exCSVbin $dataRecord/$ndt7fname $datafname1 && echo "Saved to $datafname1." >>$dataRecord/$runlogsfname || echo -e "\n$(date '+[%d-%m-%Y %H:%M:%S IST]') ......Failed to run $exCSVbin and save data to $datafname1." >>$dataRecord/$runlogsfname
+		# sleep 1m
+		echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ...Running speedtest... Test $j." >>$dataRecord/$runlogsfname
+		echo -n "$(date '+%Y-%m-%d %H:%M:%S')," >>$datafname2 && $speedtestbin -f csv >>$datafname2 && echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ......Test done. Saved to $datafname2." >>$dataRecord/$runlogsfname || (echo >>$datafname2 && echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ......Failed to run $speedtestbin." >>$dataRecord/$runlogsfname)
+		sleeptime=3
+		echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ...Sleeping for $sleeptime minutes..." >>$dataRecord/$runlogsfname
+		sleep ${sleeptime}m
+	done
+	echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ...Data file $datafname1 saved." >>$dataRecord/$runlogsfname
+	echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') ...Data file $datafname2 saved." >>$dataRecord/$runlogsfname
+	echo "$(date '+[%d-%m-%Y %H:%M:%S IST]') Iteration $i completed." >>$dataRecord/$runlogsfname
+	echo >>$dataRecord/$runlogsfname
+done
+rm $dataRecord/$ndt7fname
+touch $datadir.log
+echo "Job completed. " $(date) >$datadir.log
+echo "$datafilecount NDT CSV file(s), and $datafilecount Ookla CSV file(s) saved. Each CSV file contains $testcount lines." >>$datadir.log
+echo >>$datadir.log
+echo -e "Logs\n----" >>$datadir.log
+cat $dataRecord/$runlogsfname >>$datadir.log
+echo "End of logs." >>$datadir.log
+rm $dataRecord/$runlogsfname
