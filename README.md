@@ -1,3 +1,6 @@
+"Project Sangjog" / "Project 5G/LTE"
+November 2025. IIT Delhi.
+------------------------------------
 This document has been written by the author of this project, Arunangshu Pal (arunangshupal@cse.iitd.ac.in).
 
 This repository contains programs and scripts to collect ndt7 and Speedtest CLI data in a GNU/Linux system. A job may be created that runs in a Raspberry Pi computer to automatically collect data.
